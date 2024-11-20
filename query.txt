@@ -1,0 +1,259 @@
+-- MySQL Workbench Forward Engineering
+
+SET @OLD_UNIQUE_CHECKS=@@UNIQUE_CHECKS, UNIQUE_CHECKS=0;
+SET @OLD_FOREIGN_KEY_CHECKS=@@FOREIGN_KEY_CHECKS, FOREIGN_KEY_CHECKS=0;
+SET @OLD_SQL_MODE=@@SQL_MODE, SQL_MODE='ONLY_FULL_GROUP_BY,STRICT_TRANS_TABLES,NO_ZERO_IN_DATE,NO_ZERO_DATE,ERROR_FOR_DIVISION_BY_ZERO,NO_ENGINE_SUBSTITUTION';
+
+-- -----------------------------------------------------
+-- Schema mydb
+-- -----------------------------------------------------
+-- -----------------------------------------------------
+-- Schema validation3
+-- -----------------------------------------------------
+
+-- -----------------------------------------------------
+-- Schema validation3
+-- -----------------------------------------------------
+CREATE SCHEMA IF NOT EXISTS `validation3` DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci ;
+-- -----------------------------------------------------
+-- Schema validation_modi
+-- -----------------------------------------------------
+
+-- -----------------------------------------------------
+-- Schema validation_modi
+-- -----------------------------------------------------
+CREATE SCHEMA IF NOT EXISTS `validation_modi` DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci ;
+USE `validation3` ;
+
+-- -----------------------------------------------------
+-- Table `validation3`.`board`
+-- -----------------------------------------------------
+CREATE TABLE IF NOT EXISTS `validation3`.`board` (
+  `board_id` INT NOT NULL AUTO_INCREMENT,
+  `board_name` VARCHAR(10) NOT NULL,
+  PRIMARY KEY (`board_id`),
+  UNIQUE INDEX `unique_board` (`board_name` ASC) VISIBLE)
+ENGINE = InnoDB
+AUTO_INCREMENT = 4
+DEFAULT CHARACTER SET = utf8mb4
+COLLATE = utf8mb4_0900_ai_ci;
+
+
+-- -----------------------------------------------------
+-- Table `validation3`.`bsp`
+-- -----------------------------------------------------
+CREATE TABLE IF NOT EXISTS `validation3`.`bsp` (
+  `bsp_id` INT NOT NULL AUTO_INCREMENT,
+  `bsp_name` VARCHAR(10) NULL DEFAULT NULL,
+  PRIMARY KEY (`bsp_id`),
+  UNIQUE INDEX `unique_bsp` (`bsp_name` ASC) VISIBLE)
+ENGINE = InnoDB
+AUTO_INCREMENT = 4
+DEFAULT CHARACTER SET = utf8mb4
+COLLATE = utf8mb4_0900_ai_ci;
+
+
+-- -----------------------------------------------------
+-- Table `validation3`.`release`
+-- -----------------------------------------------------
+CREATE TABLE IF NOT EXISTS `validation3`.`release` (
+  `release_id` INT NOT NULL AUTO_INCREMENT,
+  `release_date` VARCHAR(30) NOT NULL,
+  `bsp_id` INT NOT NULL,
+  `board_id` INT NOT NULL,
+  PRIMARY KEY (`release_id`),
+  UNIQUE INDEX `unique_release` (`release_date` ASC, `bsp_id` ASC, `board_id` ASC) VISIBLE,
+  INDEX `board_id` (`board_id` ASC) VISIBLE,
+  INDEX `bsp_id` (`bsp_id` ASC) VISIBLE,
+  CONSTRAINT `release_ibfk_1`
+    FOREIGN KEY (`board_id`)
+    REFERENCES `validation3`.`board` (`board_id`),
+  CONSTRAINT `release_ibfk_2`
+    FOREIGN KEY (`bsp_id`)
+    REFERENCES `validation3`.`bsp` (`bsp_id`))
+ENGINE = InnoDB
+AUTO_INCREMENT = 9
+DEFAULT CHARACTER SET = utf8mb4
+COLLATE = utf8mb4_0900_ai_ci;
+
+
+-- -----------------------------------------------------
+-- Table `validation3`.`test_case`
+-- -----------------------------------------------------
+CREATE TABLE IF NOT EXISTS `validation3`.`test_case` (
+  `test_case_id` INT NOT NULL AUTO_INCREMENT,
+  `tc_id` VARCHAR(10) NOT NULL,
+  `category` VARCHAR(30) NULL DEFAULT NULL,
+  `sub_category` VARCHAR(30) NULL DEFAULT NULL,
+  `title` TEXT NULL DEFAULT NULL,
+  `status` VARCHAR(20) NULL DEFAULT NULL,
+  `domain` VARCHAR(100) NULL DEFAULT NULL,
+  `pre_condition` TEXT NULL DEFAULT NULL,
+  `test_sequence` TEXT NULL DEFAULT NULL,
+  `pass_criteria` TEXT NULL DEFAULT NULL,
+  `linked_work_items` VARCHAR(50) NULL DEFAULT NULL,
+  `comment` TEXT NULL DEFAULT NULL,
+  PRIMARY KEY (`test_case_id`))
+ENGINE = InnoDB
+AUTO_INCREMENT = 2
+DEFAULT CHARACTER SET = utf8mb4
+COLLATE = utf8mb4_0900_ai_ci;
+
+
+-- -----------------------------------------------------
+-- Table `validation3`.`result`
+-- -----------------------------------------------------
+CREATE TABLE IF NOT EXISTS `validation3`.`result` (
+  `result_id` INT NOT NULL AUTO_INCREMENT,
+  `result` ENUM('Pass', 'Fail', 'Incomplete') NULL DEFAULT NULL,
+  `release_id` INT NOT NULL,
+  `test_case_id` INT NOT NULL,
+  PRIMARY KEY (`result_id`),
+  INDEX `release_id` (`release_id` ASC) VISIBLE,
+  INDEX `test_case_id` (`test_case_id` ASC) VISIBLE,
+  CONSTRAINT `result_ibfk_1`
+    FOREIGN KEY (`release_id`)
+    REFERENCES `validation3`.`release` (`release_id`),
+  CONSTRAINT `result_ibfk_2`
+    FOREIGN KEY (`test_case_id`)
+    REFERENCES `validation3`.`test_case` (`test_case_id`))
+ENGINE = InnoDB
+DEFAULT CHARACTER SET = utf8mb4
+COLLATE = utf8mb4_0900_ai_ci;
+
+USE `validation_modi` ;
+
+-- -----------------------------------------------------
+-- Table `validation_modi`.`board`
+-- -----------------------------------------------------
+CREATE TABLE IF NOT EXISTS `validation_modi`.`board` (
+  `board_id` INT NOT NULL AUTO_INCREMENT,
+  `board_name` VARCHAR(10) NOT NULL,
+  PRIMARY KEY (`board_id`))
+ENGINE = InnoDB
+AUTO_INCREMENT = 4
+DEFAULT CHARACTER SET = utf8mb4
+COLLATE = utf8mb4_0900_ai_ci;
+
+
+-- -----------------------------------------------------
+-- Table `validation_modi`.`bsp`
+-- -----------------------------------------------------
+CREATE TABLE IF NOT EXISTS `validation_modi`.`bsp` (
+  `bsp_id` INT NOT NULL AUTO_INCREMENT,
+  `bsp_name` VARCHAR(10) NULL DEFAULT NULL,
+  PRIMARY KEY (`bsp_id`))
+ENGINE = InnoDB
+AUTO_INCREMENT = 4
+DEFAULT CHARACTER SET = utf8mb4
+COLLATE = utf8mb4_0900_ai_ci;
+
+
+-- -----------------------------------------------------
+-- Table `validation_modi`.`category`
+-- -----------------------------------------------------
+CREATE TABLE IF NOT EXISTS `validation_modi`.`category` (
+  `category_id` INT NOT NULL AUTO_INCREMENT,
+  `category_name` VARCHAR(50) NULL DEFAULT NULL,
+  PRIMARY KEY (`category_id`))
+ENGINE = InnoDB
+AUTO_INCREMENT = 7
+DEFAULT CHARACTER SET = utf8mb4
+COLLATE = utf8mb4_0900_ai_ci;
+
+
+-- -----------------------------------------------------
+-- Table `validation_modi`.`test_case`
+-- -----------------------------------------------------
+CREATE TABLE IF NOT EXISTS `validation_modi`.`test_case` (
+  `test_case_id` INT NOT NULL AUTO_INCREMENT,
+  `tc_id` VARCHAR(10) NOT NULL,
+  `category_id` INT NOT NULL,
+  `sub_category` VARCHAR(30) NULL DEFAULT NULL,
+  `title` TEXT NULL DEFAULT NULL,
+  `status` VARCHAR(20) NULL DEFAULT NULL,
+  `domain` VARCHAR(100) NULL DEFAULT NULL,
+  `pre_condition` TEXT NULL DEFAULT NULL,
+  `test_sequence` TEXT NULL DEFAULT NULL,
+  `pass_criteria` TEXT NULL DEFAULT NULL,
+  `linked_work_items` VARCHAR(50) NULL DEFAULT NULL,
+  `comment` TEXT NULL DEFAULT NULL,
+  PRIMARY KEY (`test_case_id`),
+  INDEX `category_id` (`category_id` ASC) VISIBLE,
+  CONSTRAINT `test_case_ibfk_1`
+    FOREIGN KEY (`category_id`)
+    REFERENCES `validation_modi`.`category` (`category_id`))
+ENGINE = InnoDB
+AUTO_INCREMENT = 6
+DEFAULT CHARACTER SET = utf8mb4
+COLLATE = utf8mb4_0900_ai_ci;
+
+
+-- -----------------------------------------------------
+-- Table `validation_modi`.`bsp_tc_mapping`
+-- -----------------------------------------------------
+CREATE TABLE IF NOT EXISTS `validation_modi`.`bsp_tc_mapping` (
+  `bsp_id` INT NOT NULL,
+  `test_case_id` INT NOT NULL,
+  INDEX `bsp_id` (`bsp_id` ASC) VISIBLE,
+  INDEX `test_case_id` (`test_case_id` ASC) VISIBLE,
+  CONSTRAINT `bsp_tc_mapping_ibfk_1`
+    FOREIGN KEY (`bsp_id`)
+    REFERENCES `validation_modi`.`bsp` (`bsp_id`),
+  CONSTRAINT `bsp_tc_mapping_ibfk_2`
+    FOREIGN KEY (`test_case_id`)
+    REFERENCES `validation_modi`.`test_case` (`test_case_id`))
+ENGINE = InnoDB
+DEFAULT CHARACTER SET = utf8mb4
+COLLATE = utf8mb4_0900_ai_ci;
+
+
+-- -----------------------------------------------------
+-- Table `validation_modi`.`release`
+-- -----------------------------------------------------
+CREATE TABLE IF NOT EXISTS `validation_modi`.`release` (
+  `release_id` INT NOT NULL AUTO_INCREMENT,
+  `release_date` VARCHAR(30) NOT NULL,
+  `bsp_id` INT NOT NULL,
+  `board_id` INT NOT NULL,
+  PRIMARY KEY (`release_id`),
+  INDEX `board_id` (`board_id` ASC) VISIBLE,
+  INDEX `bsp_id` (`bsp_id` ASC) VISIBLE,
+  CONSTRAINT `release_ibfk_1`
+    FOREIGN KEY (`board_id`)
+    REFERENCES `validation_modi`.`board` (`board_id`),
+  CONSTRAINT `release_ibfk_2`
+    FOREIGN KEY (`bsp_id`)
+    REFERENCES `validation_modi`.`bsp` (`bsp_id`))
+ENGINE = InnoDB
+AUTO_INCREMENT = 7
+DEFAULT CHARACTER SET = utf8mb4
+COLLATE = utf8mb4_0900_ai_ci;
+
+
+-- -----------------------------------------------------
+-- Table `validation_modi`.`result`
+-- -----------------------------------------------------
+CREATE TABLE IF NOT EXISTS `validation_modi`.`result` (
+  `result_id` INT NOT NULL AUTO_INCREMENT,
+  `result` ENUM('PASS', 'FAIL', 'SKIP') NULL DEFAULT NULL,
+  `release_id` INT NOT NULL,
+  `test_case_id` INT NOT NULL,
+  PRIMARY KEY (`result_id`),
+  INDEX `release_id` (`release_id` ASC) VISIBLE,
+  INDEX `test_case_id` (`test_case_id` ASC) VISIBLE,
+  CONSTRAINT `result_ibfk_1`
+    FOREIGN KEY (`release_id`)
+    REFERENCES `validation_modi`.`release` (`release_id`),
+  CONSTRAINT `result_ibfk_2`
+    FOREIGN KEY (`test_case_id`)
+    REFERENCES `validation_modi`.`test_case` (`test_case_id`))
+ENGINE = InnoDB
+AUTO_INCREMENT = 2
+DEFAULT CHARACTER SET = utf8mb4
+COLLATE = utf8mb4_0900_ai_ci;
+
+
+SET SQL_MODE=@OLD_SQL_MODE;
+SET FOREIGN_KEY_CHECKS=@OLD_FOREIGN_KEY_CHECKS;
+SET UNIQUE_CHECKS=@OLD_UNIQUE_CHECKS;
