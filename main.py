@@ -1,4 +1,5 @@
 import sys
+import openpyxl
 from PySide6.QtWidgets import QApplication, QMainWindow, QWidget, QVBoxLayout, QListView, QTableWidgetItem
 from PySide6.QtGui import QStandardItemModel, QStandardItem
 from PySide6.QtCore import Qt
@@ -19,7 +20,6 @@ class MainWindow(QMainWindow):
         self.init_add_tc_form()
         self.init_results_form()
 
-        # search_result_button 클릭 이벤트 연결
         self.ui.search_result_button.clicked.connect(self.search_test_results)
 
     def init_results_form(self):
@@ -153,6 +153,7 @@ class MainWindow(QMainWindow):
         self.add_tc_form.setupUi(self.add_tc_popup)
         self.ui.add_tc_button_2.clicked.connect(self.show_add_tc_popup)
         self.add_tc_form.add_tc_button.clicked.connect(self.add_test_case)
+        self.add_tc_form.auto_tc_pushButton.clicked.connect(self.auto_add_test_case)
 
     def on_tag_item_clicked(self, index):
         tag_name = index.data(Qt.DisplayRole)
@@ -243,6 +244,53 @@ class MainWindow(QMainWindow):
         for row in results:
             item = QStandardItem(row['title'])
             model.appendRow(item)
+
+    def auto_add_test_case(self):
+        # Load the workbook
+        workbook = openpyxl.load_workbook('ExynosAutoV920_Validation_IR241007_103552_LA.xlsx')
+
+        # Select the sheet
+        sheet = workbook['User_Scenario']
+
+        # Read data from specific cells and store in variables
+        for row in sheet.iter_rows(min_row=3, max_row=46, min_col=1, max_col=17):
+            tc_id = row[0].value
+            category_name = row[1].value
+            sub_category_name = row[2].value
+            title = row[3].value
+            status = row[4].value
+            domain = row[5].value
+            pre_condition = row[6].value
+            test_sequence = row[7].value
+            pass_criteria = row[8].value
+            link_work = row[11].value
+            comment = row[12].value
+            category_query = "SELECT category_id FROM category WHERE category_name = %s"
+            category_result = self.database.execute_query(category_query, (category_name,))
+
+            if category_result:
+                category_id = category_result[0]['category_id']
+            else:
+                insert_category_query = "INSERT INTO category (category_name) VALUES (%s)"
+                self.database.execute_query(insert_category_query, (category_name,))
+
+                category_id_query = "SELECT category_id FROM category WHERE category_name = %s"
+                category_result = self.database.execute_query(category_id_query, (category_name,))
+                if category_result:
+                    category_id = category_result[0]['category_id']
+                else:
+                    print("Failed to retrieve category ID after insertion.")
+                    return
+
+            if category_id:
+                query = """
+                    INSERT INTO test_case
+                    (tc_id, category_id, sub_category, title, status, domain, pre_condition, test_sequence, pass_criteria, linked_work_items, comment)
+                    VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+                """
+                self.database.execute_query(query, (tc_id, category_id, sub_category_name, title, status, domain, pre_condition, test_sequence, pass_criteria, link_work, comment))
+            else:
+                print("Invalid category")
 
     def add_test_case(self):
         print("Adding test case")

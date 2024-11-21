@@ -87,6 +87,12 @@ class Ui_Form(object):
 
         self.horizontalLayout_2 = QHBoxLayout()
         self.horizontalLayout_2.setObjectName(u"horizontalLayout_2")
+        self.auto_tc_pushButton = QPushButton(Form)
+        self.auto_tc_pushButton.setObjectName(u"auto_tc_pushButton")
+        self.auto_tc_pushButton.setMaximumSize(QSize(50, 50))
+
+        self.horizontalLayout_2.addWidget(self.auto_tc_pushButton)
+
         self.add_tc_button = QPushButton(Form)
         self.add_tc_button.setObjectName(u"add_tc_button")
         self.add_tc_button.setMinimumSize(QSize(100, 100))
@@ -119,6 +125,7 @@ class Ui_Form(object):
         self.pass_criteria_lineEdit.setPlaceholderText(QCoreApplication.translate("Form", u"Pass Criteria", None))
         self.link_lineEdit.setPlaceholderText(QCoreApplication.translate("Form", u"Linked Work Items", None))
         self.comment_lineEdit.setPlaceholderText(QCoreApplication.translate("Form", u"Comment", None))
+        self.auto_tc_pushButton.setText(QCoreApplication.translate("Form", u"Auto", None))
         self.add_tc_button.setText(QCoreApplication.translate("Form", u"Add Test Case", None))
     # retranslateUi
 
