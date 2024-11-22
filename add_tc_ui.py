@@ -15,8 +15,8 @@ from PySide6.QtGui import (QBrush, QColor, QConicalGradient, QCursor,
     QFont, QFontDatabase, QGradient, QIcon,
     QImage, QKeySequence, QLinearGradient, QPainter,
     QPalette, QPixmap, QRadialGradient, QTransform)
-from PySide6.QtWidgets import (QApplication, QHBoxLayout, QLineEdit, QPushButton,
-    QSizePolicy, QVBoxLayout, QWidget)
+from PySide6.QtWidgets import (QApplication, QComboBox, QHBoxLayout, QLineEdit,
+    QPushButton, QSizePolicy, QVBoxLayout, QWidget)
 
 class Ui_Form(object):
     def setupUi(self, Form):
@@ -84,6 +84,26 @@ class Ui_Form(object):
 
 
         self.verticalLayout.addLayout(self.horizontalLayout)
+
+        self.horizontalLayout_3 = QHBoxLayout()
+        self.horizontalLayout_3.setObjectName(u"horizontalLayout_3")
+        self.add_tc_tag_comboBox = QComboBox(Form)
+        self.add_tc_tag_comboBox.setObjectName(u"add_tc_tag_comboBox")
+
+        self.horizontalLayout_3.addWidget(self.add_tc_tag_comboBox)
+
+        self.add_tc_board_comboBox = QComboBox(Form)
+        self.add_tc_board_comboBox.setObjectName(u"add_tc_board_comboBox")
+
+        self.horizontalLayout_3.addWidget(self.add_tc_board_comboBox)
+
+        self.add_tc_bsp_comboBox = QComboBox(Form)
+        self.add_tc_bsp_comboBox.setObjectName(u"add_tc_bsp_comboBox")
+
+        self.horizontalLayout_3.addWidget(self.add_tc_bsp_comboBox)
+
+
+        self.verticalLayout.addLayout(self.horizontalLayout_3)
 
         self.horizontalLayout_2 = QHBoxLayout()
         self.horizontalLayout_2.setObjectName(u"horizontalLayout_2")

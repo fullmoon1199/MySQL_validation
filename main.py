@@ -73,6 +73,7 @@ class MainWindow(QMainWindow):
                 self.ui.result_tableWidget.setItem(row_number, column_number, QTableWidgetItem(str(data)))
 
     def load_tag_combobox(self):
+        print("Loading tag combobox")
         query = """
         SELECT DISTINCT release_date
         FROM `release`
@@ -127,6 +128,31 @@ class MainWindow(QMainWindow):
             return result[0]['release_id']
         return None
 
+    def load_add_tc_board_combobox(self):
+        query = "SELECT * FROM board"
+        results = self.database.execute_query(query)
+        self.add_tc_form.add_tc_board_comboBox.clear()
+        for row in results:
+            self.add_tc_form.add_tc_board_comboBox.addItem(row['board_name'])
+
+    def load_add_tc_bsp_combobox(self):
+        query = "SELECT * FROM bsp"
+        results = self.database.execute_query(query)
+        self.add_tc_form.add_tc_bsp_comboBox.clear()
+        for row in results:
+            self.add_tc_form.add_tc_bsp_comboBox.addItem(row['bsp_name'])
+
+    def load_add_tc_tag_comboBox(self):
+        query = """
+        SELECT DISTINCT release_date
+        FROM `release`
+        ORDER BY release_date;
+        """
+        results = self.database.execute_query(query)
+        self.add_tc_form.add_tc_tag_comboBox.clear()
+        for row in results:
+            self.add_tc_form.add_tc_tag_comboBox.addItem(row['release_date'])
+
     def add_result(self):
         print("Adding result")
         if self.add_result_form.pass_button.isChecked():
@@ -180,15 +206,18 @@ class MainWindow(QMainWindow):
 
     def load_tc_for_bsp(self, bsp_name):
         query = """
-                SELECT test_case.tc_id
-                FROM test_case
-                JOIN bsp_tc_mapping
-                ON test_case.test_case_id = bsp_tc_mapping.test_case_id
-                JOIN bsp
-                ON bsp_tc_mapping.bsp_id = bsp.bsp_id
-                WHERE bsp.bsp_name = %s;
+                select result.result_id, result.result, result.release_id, result.test_case_id, `release`.release_date, bsp.bsp_name, board.board_name, test_case.tc_id from result
+                join `release`
+                on result.release_id = `release`.release_id
+                join bsp
+                on bsp.bsp_id = `release`.bsp_id
+                join board
+                on board.board_id = `release`.board_id
+                join test_case
+                on test_case.test_case_id = result.test_case_id
+                where bsp.bsp_name = %s and board.board_name = %s and `release`.release_date = %s;
         """
-        results = self.database.execute_query(query, (bsp_name,))
+        results = self.database.execute_query(query, (bsp_name, self.add_result_form.label_3.text().split(":")[1].strip(), self.add_result_form.label_4.text().split(":")[1].strip()))
         model = QStandardItemModel()
         for row in results:
             item = QStandardItem(row['tc_id'])
@@ -245,6 +274,69 @@ class MainWindow(QMainWindow):
             item = QStandardItem(row['title'])
             model.appendRow(item)
 
+    def add_tc(self, tc_id, category_name, sub_category_name, title, status, domain, pre_condition, test_sequence, pass_criteria, link_work, comment, board_name, bsp_name, release_date):
+        board_name = self.add_tc_form.add_tc_board_comboBox.currentText()
+        bsp_name = self.add_tc_form.add_tc_bsp_comboBox.currentText()
+        release_date = self.add_tc_form.add_tc_tag_comboBox.currentText()
+        category_query = "SELECT category_id FROM category WHERE category_name = %s"
+        category_result = self.database.execute_query(category_query, (category_name,))
+        if category_result:
+            category_id = category_result[0]['category_id']
+        else:
+            insert_category_query = "INSERT INTO category (category_name) VALUES (%s)"
+            self.database.execute_query(insert_category_query, (category_name,))
+            category_id_query = "SELECT category_id FROM category WHERE category_name = %s"
+            category_result = self.database.execute_query(category_id_query, (category_name,))
+            if category_result:
+                category_id = category_result[0]['category_id']
+            else:
+                print("Failed to retrieve category ID after insertion.")
+                return
+        if category_id:
+            query = """
+                INSERT INTO test_case
+                (tc_id, category_id, sub_category, title, status, domain, pre_condition, test_sequence, pass_criteria, linked_work_items, comment)
+                VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+            """
+            self.database.execute_query(query, (tc_id, category_id, sub_category_name, title, status, domain, pre_condition, test_sequence, pass_criteria, link_work, comment))
+        else:
+            print("Invalid category")
+        query = """
+                SELECT test_case_id
+                FROM test_case
+                WHERE tc_id = %s
+                AND category_id = %s
+                AND title = %s
+                AND sub_category = %s
+                AND status = %s
+                AND domain = %s
+                AND pre_condition = %s
+                AND test_sequence = %s
+                AND pass_criteria = %s
+                AND linked_work_items = %s
+                AND comment = %s
+        """
+        add_test_case_id = self.database.execute_query(query, (tc_id, category_id, sub_category_name, title, status, domain, pre_condition, test_sequence, pass_criteria, link_work, comment))
+        print(f"Test Case ID: {add_test_case_id}")
+        query = """
+                SELECT `release`.release_id
+                FROM `release`
+                JOIN bsp
+                ON `release`.bsp_id = bsp.bsp_id
+                JOIN board
+                ON `release`.board_id = board.board_id
+                WHERE bsp.bsp_name = %s
+                AND board.board_name = %s
+                AND `release`.release_date = %s;
+        """
+        release_id = self.database.execute_query(query, (bsp_name, board_name, release_date))
+        query = """
+                INSERT INTO result
+                (result, release_id, test_case_id)
+                VALUES (%s, %s, %s)
+        """
+        self.database.execute_query(query, ('SKIP', release_id[0]['release_id'], add_test_case_id[0]['test_case_id']))
+
     def auto_add_test_case(self):
         # Load the workbook
         workbook = openpyxl.load_workbook('ExynosAutoV920_Validation_IR241007_103552_LA.xlsx')
@@ -265,32 +357,75 @@ class MainWindow(QMainWindow):
             pass_criteria = row[8].value
             link_work = row[11].value
             comment = row[12].value
-            category_query = "SELECT category_id FROM category WHERE category_name = %s"
-            category_result = self.database.execute_query(category_query, (category_name,))
+            board_name = self.add_tc_form.add_tc_board_comboBox.currentText()
+            bsp_name = self.add_tc_form.add_tc_bsp_comboBox.currentText()
+            release_date = self.add_tc_form.add_tc_tag_comboBox.currentText()
+            self.add_tc(tc_id, category_name, sub_category_name, title, status, domain, pre_condition, test_sequence, pass_criteria, link_work, comment, board_name, bsp_name, release_date)
 
-            if category_result:
-                category_id = category_result[0]['category_id']
-            else:
-                insert_category_query = "INSERT INTO category (category_name) VALUES (%s)"
-                self.database.execute_query(insert_category_query, (category_name,))
+            # category_query = "SELECT category_id FROM category WHERE category_name = %s"
+            # category_result = self.database.execute_query(category_query, (category_name,))
 
-                category_id_query = "SELECT category_id FROM category WHERE category_name = %s"
-                category_result = self.database.execute_query(category_id_query, (category_name,))
-                if category_result:
-                    category_id = category_result[0]['category_id']
-                else:
-                    print("Failed to retrieve category ID after insertion.")
-                    return
+            # if category_result:
+            #     category_id = category_result[0]['category_id']
+            # else:
+            #     insert_category_query = "INSERT INTO category (category_name) VALUES (%s)"
+            #     self.database.execute_query(insert_category_query, (category_name,))
 
-            if category_id:
-                query = """
-                    INSERT INTO test_case
-                    (tc_id, category_id, sub_category, title, status, domain, pre_condition, test_sequence, pass_criteria, linked_work_items, comment)
-                    VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
-                """
-                self.database.execute_query(query, (tc_id, category_id, sub_category_name, title, status, domain, pre_condition, test_sequence, pass_criteria, link_work, comment))
-            else:
-                print("Invalid category")
+            #     category_id_query = "SELECT category_id FROM category WHERE category_name = %s"
+            #     category_result = self.database.execute_query(category_id_query, (category_name,))
+            #     if category_result:
+            #         category_id = category_result[0]['category_id']
+            #     else:
+            #         print("Failed to retrieve category ID after insertion.")
+            #         return
+
+            # if category_id:
+            #     query = """
+            #         INSERT INTO test_case
+            #         (tc_id, category_id, sub_category, title, status, domain, pre_condition, test_sequence, pass_criteria, linked_work_items, comment)
+            #         VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+            #     """
+            #     self.database.execute_query(query, (tc_id, category_id, sub_category_name, title, status, domain, pre_condition, test_sequence, pass_criteria, link_work, comment))
+            # else:
+            #     print("Invalid category")
+
+            # query = """
+            #         SELECT test_case_id
+            #         FROM test_case
+            #         WHERE tc_id = %s
+            #         AND category_id = %s
+            #         AND title = %s
+            #         AND sub_category = %s
+            #         AND status = %s
+            #         AND domain = %s
+            #         AND pre_condition = %s
+            #         AND test_sequence = %s
+            #         AND pass_criteria = %s
+            #         AND linked_work_items = %s
+            #         AND comment = %s
+            # """
+            # add_test_case_id = self.database.execute_query(query, (tc_id, category_id, sub_category_name, title, status, domain, pre_condition, test_sequence, pass_criteria, link_work, comment))
+            # print(f"Test Case ID: {add_test_case_id}")
+
+            # query = """
+            #         SELECT `release`.release_id
+            #         FROM `release`
+            #         JOIN bsp
+            #         ON `release`.bsp_id = bsp.bsp_id
+            #         JOIN board
+            #         ON `release`.board_id = board.board_id
+            #         WHERE bsp.bsp_name = %s
+            #         AND board.board_name = %s
+            #         AND `release`.release_date = %s;
+            # """
+            # release_id = self.database.execute_query(query, (bsp_name, board_name, release_date))
+
+            # query = """
+            #         INSERT INTO result
+            #         (result, release_id, test_case_id)
+            #         VALUES (%s, %s, %s)
+            # """
+            # self.database.execute_query(query, ('SKIP', release_id[0]['release_id'], add_test_case_id[0]['test_case_id']))
 
     def add_test_case(self):
         print("Adding test case")
@@ -306,32 +441,75 @@ class MainWindow(QMainWindow):
         link_work = self.add_tc_form.link_lineEdit.text()
         comment = self.add_tc_form.comment_lineEdit.text()
 
-        category_query = "SELECT category_id FROM category WHERE category_name = %s"
-        category_result = self.database.execute_query(category_query, (category_name,))
+        board_name = self.add_tc_form.add_tc_board_comboBox.currentText()
+        bsp_name = self.add_tc_form.add_tc_bsp_comboBox.currentText()
+        release_date = self.add_tc_form.add_tc_tag_comboBox.currentText()
 
-        if category_result:
-            category_id = category_result[0]['category_id']
-        else:
-            insert_category_query = "INSERT INTO category (category_name) VALUES (%s)"
-            self.database.execute_query(insert_category_query, (category_name,))
+        self.add_tc(tc_id, category_name, sub_category_name, title, status, domain, pre_condition, test_sequence, pass_criteria, link_work, comment, board_name, bsp_name, release_date)
+        # category_query = "SELECT category_id FROM category WHERE category_name = %s"
+        # category_result = self.database.execute_query(category_query, (category_name,))
 
-            category_id_query = "SELECT category_id FROM category WHERE category_name = %s"
-            category_result = self.database.execute_query(category_id_query, (category_name,))
-            if category_result:
-                category_id = category_result[0]['category_id']
-            else:
-                print("Failed to retrieve category ID after insertion.")
-                return
+        # if category_result:
+        #     category_id = category_result[0]['category_id']
+        # else:
+        #     insert_category_query = "INSERT INTO category (category_name) VALUES (%s)"
+        #     self.database.execute_query(insert_category_query, (category_name,))
 
-        if category_id:
-            query = """
-                INSERT INTO test_case
-                (tc_id, category_id, sub_category, title, status, domain, pre_condition, test_sequence, pass_criteria, linked_work_items, comment)
-                VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
-            """
-            self.database.execute_query(query, (tc_id, category_id, sub_category_name, title, status, domain, pre_condition, test_sequence, pass_criteria, link_work, comment))
-        else:
-            print("Invalid category")
+        #     category_id_query = "SELECT category_id FROM category WHERE category_name = %s"
+        #     category_result = self.database.execute_query(category_id_query, (category_name,))
+        #     if category_result:
+        #         category_id = category_result[0]['category_id']
+        #     else:
+        #         print("Failed to retrieve category ID after insertion.")
+        #         return
+
+        # if category_id:
+        #     query = """
+        #         INSERT INTO test_case
+        #         (tc_id, category_id, sub_category, title, status, domain, pre_condition, test_sequence, pass_criteria, linked_work_items, comment)
+        #         VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+        #     """
+        #     self.database.execute_query(query, (tc_id, category_id, sub_category_name, title, status, domain, pre_condition, test_sequence, pass_criteria, link_work, comment))
+        # else:
+        #     print("Invalid category")
+
+        # query = """
+        #         SELECT test_case_id
+        #         FROM test_case
+        #         WHERE tc_id = %s
+        #         AND category_id = %s
+        #         AND title = %s
+        #         AND sub_category = %s
+        #         AND status = %s
+        #         AND domain = %s
+        #         AND pre_condition = %s
+        #         AND test_sequence = %s
+        #         AND pass_criteria = %s
+        #         AND linked_work_items = %s
+        #         AND comment = %s
+        # """
+        # add_test_case_id = self.database.execute_query(query, (tc_id, category_id, sub_category_name, title, status, domain, pre_condition, test_sequence, pass_criteria, link_work, comment))
+        # print(f"Test Case ID: {add_test_case_id}")
+
+        # query = """
+        #         SELECT `release`.release_id
+        #         FROM `release`
+        #         JOIN bsp
+        #         ON `release`.bsp_id = bsp.bsp_id
+        #         JOIN board
+        #         ON `release`.board_id = board.board_id
+        #         WHERE bsp.bsp_name = %s
+        #         AND board.board_name = %s
+        #         AND `release`.release_date = %s;
+        # """
+        # release_id = self.database.execute_query(query, (bsp_name, board_name, release_date))
+
+        # query = """
+        #         INSERT INTO result
+        #         (result, release_id, test_case_id)
+        #         VALUES (%s, %s, %s)
+        # """
+        # self.database.execute_query(query, ('SKIP', release_id[0]['release_id'], add_test_case_id[0]['test_case_id']))
 
     def find_test_case_id(self, tc_id):
         query = "SELECT test_case_id FROM test_case WHERE tc_id = %s"
@@ -342,6 +520,9 @@ class MainWindow(QMainWindow):
 
     def show_add_tc_popup(self):
         self.add_tc_popup.show()
+        self.load_add_tc_bsp_combobox()
+        self.load_add_tc_board_combobox()
+        self.load_add_tc_tag_comboBox()
 
     def load_data(self):
         query = "SELECT * FROM board"

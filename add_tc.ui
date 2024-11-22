@@ -105,6 +105,19 @@
     </layout>
    </item>
    <item>
+    <layout class="QHBoxLayout" name="horizontalLayout_3">
+     <item>
+      <widget class="QComboBox" name="add_tc_tag_comboBox"/>
+     </item>
+     <item>
+      <widget class="QComboBox" name="add_tc_board_comboBox"/>
+     </item>
+     <item>
+      <widget class="QComboBox" name="add_tc_bsp_comboBox"/>
+     </item>
+    </layout>
+   </item>
+   <item>
     <layout class="QHBoxLayout" name="horizontalLayout_2">
      <item>
       <widget class="QPushButton" name="auto_tc_pushButton">

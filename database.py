@@ -1,8 +1,19 @@
 import pymysql
+import openpyxl
 
 class Database:
     def __init__(self):
         self.connection = self.connect_to_database()
+        self.read_data_from_excel()
+
+    def read_data_from_excel(self):
+        workbook = openpyxl.load_workbook('./ExynosAutoV920_Validation_IR241007_103552_LA.xlsx')
+
+        sheet = workbook['User_Scenario']
+
+        cell_value = sheet['A5'].value
+
+        print(f"cell_value = {cell_value}")
 
     def connect_to_database(self):
         connection = pymysql.connect(
@@ -50,8 +61,8 @@ class Database:
             print(f"Error getting test results: {e}")
             return []
 
-# if __name__ == "__main__":
-#     db = Database()
+if __name__ == "__main__":
+    db = Database()
 #     query = "DESC board"
 #     results = db.execute_query(query)
 #     for row in results:
