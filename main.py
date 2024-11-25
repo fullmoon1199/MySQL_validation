@@ -43,24 +43,40 @@ class MainWindow(QMainWindow):
         bsp_name = self.ui.bsp_comboBox.currentText()
         board_name = self.ui.board_comboBox.currentText()
         release_date = self.ui.tag_comboBox.currentText()
-
         query = """
             SELECT test_case.tc_id, category.category_name, test_case.sub_category, test_case.title, test_case.status, test_case.domain, test_case.pre_condition, test_case.test_sequence, test_case.pass_criteria, test_case.linked_work_items, test_case.comment, result.result
-            FROM test_case
-            JOIN category
-            ON test_case.category_id = category.category_id
-            JOIN result
-            ON test_case.test_case_id = result.test_case_id
+            FROM result
+            JOIN test_case
+            ON result.test_case_id = test_case.test_case_id
             JOIN `release`
             ON result.release_id = `release`.release_id
             JOIN bsp
             ON `release`.bsp_id = bsp.bsp_id
             JOIN board
             ON `release`.board_id = board.board_id
+            JOIN category
+            ON test_case.category_id = category.category_id
             WHERE bsp.bsp_name = %s
             AND board.board_name = %s
             AND `release`.release_date = %s;
-        """
+            """
+        # query = """
+        #     SELECT test_case.tc_id, category.category_name, test_case.sub_category, test_case.title, test_case.status, test_case.domain, test_case.pre_condition, test_case.test_sequence, test_case.pass_criteria, test_case.linked_work_items, test_case.comment, result.result
+        #     FROM result
+        #     JOIN category
+        #     ON test_case.category_id = category.category_id
+        #     JOIN result
+        #     ON test_case.test_case_id = result.test_case_id
+        #     JOIN `release`
+        #     ON result.release_id = `release`.release_id
+        #     JOIN bsp
+        #     ON `release`.bsp_id = bsp.bsp_id
+        #     JOIN board
+        #     ON `release`.board_id = board.board_id
+        #     WHERE bsp.bsp_name = %s
+        #     AND board.board_name = %s
+        #     AND `release`.release_date = %s;
+        # """
         results = self.database.execute_query(query, (bsp_name, board_name, release_date))
 
         self.ui.result_tableWidget.setRowCount(0)
@@ -163,16 +179,28 @@ class MainWindow(QMainWindow):
             result = 'SKIP'
         else:
             return
-        test_case_id = self.find_test_case_id(self.add_result_form.label_2.text().split(":")[1].strip())
-        release_id = self.find_release_id()
-        print(f"Result: {result}, Test Case ID: {test_case_id}, Release ID: {release_id}")
+        tc_id = self.add_result_form.label_2.text().split(":")[1].strip()
+        release_date = self.add_result_form.label_4.text().split(":")[1].strip()
+        board_name = self.add_result_form.label_3.text().split(":")[1].strip()
+        bsp_name = self.add_result_form.label.text().split(":")[1].strip()
+        print(f"Result: {result}, Release Date: {release_date}, Board Name: {board_name}, BSP Name: {bsp_name}, Test Case ID: {tc_id}")
         query = """
-            INSERT INTO result
-            (result, release_id, test_case_id)
-            VALUES (%s, %s, %s)
+            UPDATE result
+            JOIN `release`
+            ON result.release_id = `release`.release_id
+            JOIN bsp
+            ON `release`.bsp_id = bsp.bsp_id
+            JOIN board
+            ON `release`.board_id = board.board_id
+            JOIN test_case
+            ON test_case.test_case_id = result.test_case_id
+            SET result.result = %s
+            WHERE `release`.release_date = %s
+            AND board.board_name = %s
+            AND bsp.bsp_name = %s
+            AND test_case.tc_id = %s;
         """
-        self.database.execute_query(query, (result, release_id, test_case_id))
-
+        self.database.execute_query(query, (result, release_date, board_name, bsp_name, tc_id))
     def init_add_tc_form(self):
         self.add_tc_popup = QWidget()
         self.add_tc_form = AddTcForm()
@@ -306,8 +334,8 @@ class MainWindow(QMainWindow):
                 FROM test_case
                 WHERE tc_id = %s
                 AND category_id = %s
-                AND title = %s
                 AND sub_category = %s
+                AND title = %s
                 AND status = %s
                 AND domain = %s
                 AND pre_condition = %s
@@ -346,21 +374,35 @@ class MainWindow(QMainWindow):
 
         # Read data from specific cells and store in variables
         for row in sheet.iter_rows(min_row=3, max_row=46, min_col=1, max_col=17):
-            tc_id = row[0].value
-            category_name = row[1].value
-            sub_category_name = row[2].value
-            title = row[3].value
-            status = row[4].value
-            domain = row[5].value
-            pre_condition = row[6].value
-            test_sequence = row[7].value
-            pass_criteria = row[8].value
-            link_work = row[11].value
-            comment = row[12].value
-            board_name = self.add_tc_form.add_tc_board_comboBox.currentText()
-            bsp_name = self.add_tc_form.add_tc_bsp_comboBox.currentText()
-            release_date = self.add_tc_form.add_tc_tag_comboBox.currentText()
-            self.add_tc(tc_id, category_name, sub_category_name, title, status, domain, pre_condition, test_sequence, pass_criteria, link_work, comment, board_name, bsp_name, release_date)
+            # tc_id = row[0].value
+            # category_name = row[1].value
+            # sub_category_name = row[2].value
+            # title = row[3].value
+            # status = row[4].value
+            # domain = row[5].value
+            # pre_condition = row[6].value
+            # test_sequence = row[7].value
+            # pass_criteria = row[8].value
+            # link_work = row[11].value
+            # comment = row[16].value
+            # board_name = self.add_tc_form.add_tc_board_comboBox.currentText()
+            # bsp_name = self.add_tc_form.add_tc_bsp_comboBox.currentText()
+            # release_date = self.add_tc_form.add_tc_tag_comboBox.currentText()
+
+            self.add_tc_form.id_lineEdit.setText(row[0].value)
+            self.add_tc_form.category_lineEdit.setText(row[1].value)
+            self.add_tc_form.sub_caregory_lineEdit.setText(row[2].value)
+            self.add_tc_form.title_lineEdit.setText(row[3].value)
+            self.add_tc_form.status_lineEdit.setText(row[4].value)
+            self.add_tc_form.domain_lineEdit.setText(row[5].value)
+            self.add_tc_form.pre_condition_lineEdit.setText(row[6].value)
+            self.add_tc_form.test_sequence_lineEdit.setText(row[7].value)
+            self.add_tc_form.pass_criteria_lineEdit.setText(row[8].value)
+            self.add_tc_form.link_lineEdit.setText(row[11].value)
+            self.add_tc_form.comment_lineEdit.setText(row[16].value)
+
+            self.add_test_case()
+            # self.add_tc(tc_id, category_name, sub_category_name, title, status, domain, pre_condition, test_sequence, pass_criteria, link_work, comment, board_name, bsp_name, release_date)
 
             # category_query = "SELECT category_id FROM category WHERE category_name = %s"
             # category_result = self.database.execute_query(category_query, (category_name,))
