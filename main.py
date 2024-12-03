@@ -60,7 +60,6 @@ class MainWindow(QMainWindow):
             AND board.board_name = %s
             AND `release`.release_date = %s;
             """
-
         results = self.database.execute_query(query, (bsp_name, board_name, release_date))
 
         self.ui.result_tableWidget.setRowCount(0)
