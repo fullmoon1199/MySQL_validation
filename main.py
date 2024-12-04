@@ -60,6 +60,7 @@ class MainWindow(QMainWindow):
             AND board.board_name = %s
             AND `release`.release_date = %s;
             """
+
         results = self.database.execute_query(query, (bsp_name, board_name, release_date))
 
         self.ui.result_tableWidget.setRowCount(0)
@@ -168,7 +169,7 @@ class MainWindow(QMainWindow):
         bsp_name = self.add_result_form.label.text().split(":")[1].strip()
         print(f"Result: {result}, Release Date: {release_date}, Board Name: {board_name}, BSP Name: {bsp_name}, Test Case ID: {tc_id}")
         query = """
-            UPDATE result
+            UPDATE resulton
             JOIN `release`
             ON result.release_id = `release`.release_id
             JOIN bsp
@@ -312,6 +313,28 @@ class MainWindow(QMainWindow):
             self.database.execute_query(query, (tc_id, category_id, sub_category_name, title, status, domain, pre_condition, test_sequence, pass_criteria, link_work, comment))
         else:
             print("Invalid category")
+
+        # TODO: Add release date, bsp name, board name to release table
+        if bsp_name and board_name and release_date:
+            release_id_query = """
+                    INSERT INTO `release` (release_date, bsp_id, board_id)
+                    SELECT %s, bsp.bsp_id, board.board_id
+                    FROM bsp
+                    JOIN board
+                    ON 1=1
+                    WHERE bsp.bsp_name = %s
+                    AND board.board_name = %s;
+            """
+            release_id_result = self.database.execute_query(release_id_query, (bsp_name, board_name, release_date))
+            if release_id_result:
+                pass
+            else:
+                query = """
+                    insert into `release` (release_date, bsp.bsp_name, board.board_name)
+                    select %s, bsp.bsp_name, board.board_name
+                """
+                self.database.execute_query(query, (release_date,))
+
         query = """
                 SELECT test_case_id
                 FROM test_case
