@@ -314,10 +314,8 @@ class MainWindow(QMainWindow):
         else:
             print("Invalid category")
 
-        # TODO: Add release date, bsp name, board name to release table
         if bsp_name and board_name and release_date:
             release_id_query = """
-                    INSERT INTO `release` (release_date, bsp_id, board_id)
                     SELECT %s, bsp.bsp_id, board.board_id
                     FROM bsp
                     JOIN board
@@ -325,15 +323,18 @@ class MainWindow(QMainWindow):
                     WHERE bsp.bsp_name = %s
                     AND board.board_name = %s;
             """
-            release_id_result = self.database.execute_query(release_id_query, (bsp_name, board_name, release_date))
-            if release_id_result:
-                pass
-            else:
-                query = """
-                    insert into `release` (release_date, bsp.bsp_name, board.board_name)
-                    select %s, bsp.bsp_name, board.board_name
-                """
-                self.database.execute_query(query, (release_date,))
+            self.database.execute_query(release_id_query, (release_date, bsp_name, board_name))
+            # TODO: release_id_query's result is not being used. Why is it being executed?
+            insert_query = """
+                INSERT INTO `release` (release_date, bsp_id, board_id)
+                SELECT %s, bsp.bsp_id, board.board_id
+                FROM bsp
+                JOIN board
+                ON 1=1
+                WHERE bsp.bsp_name = %s
+                AND board.board_name = %s;
+            """
+            self.database.execute_query(insert_query, (release_date, bsp_name, board_name))
 
         query = """
                 SELECT test_case_id
