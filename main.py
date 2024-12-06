@@ -206,7 +206,6 @@ class MainWindow(QMainWindow):
     def on_bsp_item_clicked(self, index):
         bsp_name = index.data(Qt.DisplayRole)
         print(f"BSP Name: {bsp_name}")
-        # self.load_bsp_data()
         self.load_tc_for_bsp(bsp_name)
         self.add_result_form.label.setText(f"bsp : {bsp_name}")
         self.add_result_form.label_2.setText(f"TC :")
